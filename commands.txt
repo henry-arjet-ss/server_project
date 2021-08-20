@@ -1,0 +1,19 @@
+#!/bin/bash
+#assumes Ubuntu 20.04
+git clone https://github.com/henry-arjet-ss/server_project.git
+cd server_project
+sudo apt-get update
+sudo apt-get install cmake -y
+sudo apt-get install g++ -y
+sudo apt-get install libcpprest-dev -y
+
+#Yes, I did make my server in c++
+#Yes, it is as dumb as it sounds
+#I had, in a personal project, used VS to build and then transferred the binary to a cloud instance
+#For this, I had to learn cmake.
+#It wasn't super fun
+
+cmake . -B ./build
+cmake --build ./build
+cd ./build
+./server.out
