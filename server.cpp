@@ -25,13 +25,21 @@ void createContentMap() {
     contentMap[U(".js")] = U("application/javascript");
     contentMap[U(".css")] = U("text/css");
     contentMap[U(".png")] == U("image/png");
+    contentMap[U(".svg")] == U("image/svg+xml");
 }
 
 void handle_error(pplx::task<void>& t) { //cpprestsdk uses this. I don't
     try {
         t.get();
     }
-    catch (...) {}
+    catch (std::exception& ex)
+	{
+		cout << "STD EXCEPTION: " << ex.what() << endl;
+	}
+	catch (const char* ex)
+	{
+		cout << "EXCEPTION: " << ex << endl;
+	}
 }
 
 void handleGet(http_request const& req){ //This is a barebones server, so this is all I'm including
@@ -40,21 +48,33 @@ void handleGet(http_request const& req){ //This is a barebones server, so this i
    std::cout << "GET called at " << path << endl;
 
    if (req.relative_uri().path().find_last_of(L'.') != std::string::npos) {
-       //stolen from handleGetFile function
+        //stolen from handleGetFile function
         cout << "searching for file" << endl;
         auto path = distFolder + req.relative_uri().path();
         auto extension = path.substr(path.find_last_of('.'));
         auto content_type_it = contentMap.find(extension);
-        if (content_type_it == contentMap.end()) { //if the file isn't found
+        if (content_type_it == contentMap.end()) { //if the extention isn't found
             req.reply(404U);
             return;
         }
         string content_type = content_type_it->second;
 
-
-        concurrency::streams::istream is = concurrency::streams::fstream::open_istream(path, std::ios::in).get();
-        req.reply(200U, is, content_type).then([](pplx::task<void> t) { handle_error(t); }).wait();
-        is.close();
+        try {
+            concurrency::streams::istream is = concurrency::streams::fstream::open_istream(path, std::ios::in | std::ios::binary).get();
+            req.reply(200U, is, content_type).then([](pplx::task<void> t) { handle_error(t); }).wait();
+            is.close();
+        }
+        catch (std::exception& ex)
+        {
+            cout << "STD EXCEPTION: " << ex.what() << endl;
+            req.reply(404U);
+        }
+        catch (const char* ex)
+        {
+            cout << "EXCEPTION: " << ex << endl;
+            req.reply(404U);
+        }
+        
    }
     else{
         //stolen from the handleGetRoot function
